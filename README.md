@@ -6,3 +6,9 @@ SolarScope adalah aplikasi desktop Windows berbasis C# untuk membantu pengguna n
 - **Anggota 1:** RASYADWA ARSYA IRNANTYANTO - 24/534714/TK/59283
 - **Anggota 2:** RADITYA AZHAR ANANTA - 24/539913/TK/59881
 - **Anggota 3:** GHAISAN RIFQI KAMIEL - 24/540091/TK/59899
+
+## Dokumentasi
+
+- [Gambaran Proyek](docs/project-overview.md)
+- [Pembagian Peran](docs/team-roles.md)
+- [Git Workflow](docs/git-workflow.md)
