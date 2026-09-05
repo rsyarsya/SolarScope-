@@ -12,3 +12,4 @@ SolarScope adalah aplikasi desktop Windows berbasis C# untuk membantu pengguna n
 - [Gambaran Proyek](docs/project-overview.md)
 - [Pembagian Peran](docs/team-roles.md)
 - [Git Workflow](docs/git-workflow.md)
+- [Diagram Sistem](docs/diagrams/README.md)
