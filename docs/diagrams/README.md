@@ -28,4 +28,12 @@ Penyedia API final belum dikunci. Karena itu, diagram menggunakan istilah umum *
 
 ## Status
 
-Diagram merupakan artefak perancangan Minggu 2 dan masih harus diselaraskan dengan activity diagram serta class diagram lain yang dikerjakan tim.
+Diagram merupakan artefak perancangan Minggu 2. Class diagram telah ditambahkan; penyelarasan antardiagram masih perlu ditinjau bersama tim.
+
+## Class Diagram
+
+- [Versi sederhana](class/class-diagram-simple.png)
+- [Versi dengan method](class/class-diagram-with-methods.jpeg)
+- [Catatan kedua versi](class/README.md)
+
+Kedua gambar diunggah sesuai berkas yang diberikan. File sumber yang dapat diedit belum disertakan untuk class diagram.
