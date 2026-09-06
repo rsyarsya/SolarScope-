@@ -1,0 +1,35 @@
+## .NET Build & Artifacts
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio & VS Code
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+
+## Database & Local Storage
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+## Environment & Secrets
+.env
+*.env
+appsettings.Development.json
+appsettings.Local.json
+
+## OS Generated
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store
+
+SolarScope_Project_Context.md

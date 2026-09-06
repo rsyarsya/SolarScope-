@@ -25,7 +25,7 @@ Tanggung jawab:
 
 ## Backend Developer
 
-**Nama:** [ISI SESUAI KEPUTUSAN TIM]
+**Nama:** Raditya Azhar Ananta
 
 Tanggung jawab:
 
