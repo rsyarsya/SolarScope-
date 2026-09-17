@@ -37,3 +37,9 @@ Diagram merupakan artefak perancangan Minggu 2. Class diagram telah ditambahkan;
 - [Catatan kedua versi](class/README.md)
 
 Kedua gambar diunggah sesuai berkas yang diberikan. File sumber yang dapat diedit belum disertakan untuk class diagram.
+
+## Entity Relationship Diagram (ERD)
+
+- [Pratinjau ERD](erd/erd.png)
+- [Dokumentasi & Kamus Data](erd/README.md)
+
