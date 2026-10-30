@@ -13,3 +13,18 @@ SolarScope adalah aplikasi desktop Windows berbasis C# untuk membantu pengguna n
 - [Pembagian Peran](docs/team-roles.md)
 - [Git Workflow](docs/git-workflow.md)
 - [Diagram Sistem](docs/diagrams/README.md)
+
+## Aplikasi desktop resmi
+
+Enam layar Windows Forms resmi berada di `src/SolarScope.Desktop/`: Beranda, Input Simulasi, Hasil Estimasi, Riwayat, Perbandingan, dan Panduan. UI menggunakan C# dan .NET 9, dengan file Designer yang dapat diedit kembali.
+
+Buka `SolarScope.sln` melalui Visual Studio 2022 dengan workload .NET desktop dan .NET 9 SDK. Tetapkan `SolarScope.Desktop` sebagai startup project, lalu jalankan dengan Ctrl+F5.
+
+- Build seluruh solution: `dotnet build SolarScope.sln`
+- Jalankan frontend: `dotnet run --project src/SolarScope.Desktop/SolarScope.Desktop.csproj`
+- Verifikasi: `dotnet run --project tests/SolarScope.Desktop.Verification/Verification.csproj`
+- Backend domain models: `src/SolarScope.Core/` (.NET 8).
+- Worksheet dan screenshot akademik: `docs/coursework/modul7/`.
+- Latihan login: `examples/LabLogin/`.
+
+UI dan navigasi ini menjadi frontend resmi. Data energi masih berupa contoh tetap, riwayat hanya bertahan selama sesi, dan frontend belum terhubung ke backend/API/database. Pengujian Windows 125% aktual belum terverifikasi.
