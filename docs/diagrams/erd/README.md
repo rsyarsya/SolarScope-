@@ -1,6 +1,6 @@
 # Entity Relationship Diagram (ERD) — SolarScope
 
-Dokumen ini mendeskripsikan model data relasional (ERD) untuk aplikasi SolarScope yang diimplementasikan pada database lokal (SQLite).
+Dokumen ini mendeskripsikan model data relasional (ERD) untuk aplikasi SolarScope yang diimplementasikan pada database PostgreSQL (Supabase).
 
 ---
 
@@ -41,33 +41,33 @@ Berikut adalah rincian kamus data (*data dictionary*) untuk masing-masing entita
 ### A. Entitas `simulations` (Tabel Induk Riwayat Simulasi)
 Tabel ini menyimpan metadata simulasi, parameter input pengguna, titik lokasi geografis, serta ringkasan akumulasi hasil estimasi tahunan.
 
-| Nama Atribut | Tipe Data (Model / SQLite) | Constraint | Besaran / Satuan | Keterangan & Batasan |
+| Nama Atribut | Tipe Data (Model / PostgreSQL) | Constraint | Besaran / Satuan | Keterangan & Batasan |
 | :--- | :--- | :--- | :--- | :--- |
-| `simulation_id` | `int` / `INTEGER` | **PK**, Auto Increment | Dimensi nominal (ID) | Pengenal unik untuk setiap transaksi simulasi. |
-| `scenario_name` | `string` / `TEXT` | NOT NULL | Teks deskriptif | Label atau nama skenario simulasi yang diinput pengguna (misal: "Atap Rumah"). |
-| `created_at` | `datetime` / `TEXT` | NOT NULL | Format Waktu (ISO 8601 UTC) | Waktu saat simulasi dihitung dan disimpan (`YYYY-MM-DD HH:MM:SS`). |
-| `latitude` | `double` / `REAL` | NOT NULL | Derajat Desimal (° / Deg) | Titik lintang geografis lokasi panel surya (Rentang valid: -90.0 s/d 90.0). |
-| `longitude` | `double` / `REAL` | NOT NULL | Derajat Desimal (° / Deg) | Titik bujur geografis lokasi panel surya (Rentang valid: -180.0 s/d 180.0). |
-| `location_name` | `string` / `TEXT` | Nullable | Teks | Nama tempat, kota, atau label acuan yang dimasukkan pengguna. |
-| `system_capacity_kwp` | `double` / `REAL` | NOT NULL | **Kilowatt-peak (kWp)** | Kapasitas daya puncak sistem panel surya pada kondisi standar (*STC*). Nilai > 0. |
-| `performance_ratio` | `double` / `REAL` | NOT NULL, Default `0.75` | Rasio tanpa satuan (0.01 - 1.00) | Faktor efisiensi sistem yang memperhitungkan rugi-rugi (*losses* kabel, suhu, inverter). |
-| `data_source` | `string` / `TEXT` | NOT NULL | Teks | Identitas penyedia data radiasi (default: `"NASA POWER Climatology"`). |
-| `annual_average_radiation` | `double` / `REAL` | NOT NULL | **$\text{kWh/m}^2\text{/hari}$** | Rata-rata radiasi penyinaran matahari harian sepanjang satu tahun. |
-| `total_annual_energy_kwh` | `double` / `REAL` | NOT NULL | **Kilowatt-hour (kWh)** | Total akumulasi estimasi produksi energi listrik selama 1 tahun penuh (12 bulan). |
-| `peak_production_month` | `string` / `TEXT` | NOT NULL | Nama bulan | Bulan dengan estimasi produksi energi tertinggi dalam setahun (misal: "August"). |
-| `lowest_production_month`| `string` / `TEXT` | NOT NULL | Nama bulan | Bulan dengan estimasi produksi energi terendah dalam setahun (misal: "December"). |
+| `simulation_id` | `int` / `integer` | **PK**, `GENERATED ALWAYS AS IDENTITY` | Dimensi nominal (ID) | Pengenal unik untuk setiap transaksi simulasi. |
+| `scenario_name` | `string` / `text` | NOT NULL, tidak boleh kosong | Teks deskriptif | Label atau nama skenario simulasi yang diinput pengguna (misal: "Atap Rumah"). |
+| `created_at` | `DateTime` / `timestamptz` | NOT NULL, Default `now()` | Waktu dengan zona waktu (disimpan UTC) | Waktu saat simulasi dihitung dan disimpan. |
+| `latitude` | `double` / `double precision` | NOT NULL | Derajat Desimal (° / Deg) | Titik lintang geografis lokasi panel surya (Rentang valid: -90.0 s/d 90.0). |
+| `longitude` | `double` / `double precision` | NOT NULL | Derajat Desimal (° / Deg) | Titik bujur geografis lokasi panel surya (Rentang valid: -180.0 s/d 180.0). |
+| `location_name` | `string` / `text` | Nullable | Teks | Nama tempat, kota, atau label acuan yang dimasukkan pengguna. |
+| `system_capacity_kwp` | `double` / `double precision` | NOT NULL | **Kilowatt-peak (kWp)** | Kapasitas daya puncak sistem panel surya pada kondisi standar (*STC*). Nilai > 0. |
+| `performance_ratio` | `double` / `double precision` | NOT NULL, Default `0.75` | Rasio tanpa satuan (0.01 - 1.00) | Faktor efisiensi sistem yang memperhitungkan rugi-rugi (*losses* kabel, suhu, inverter). |
+| `data_source` | `string` / `text` | NOT NULL, Default `'NASA POWER Climatology'` | Teks | Identitas penyedia data radiasi (default: `"NASA POWER Climatology"`). |
+| `annual_average_radiation` | `double` / `double precision` | NOT NULL | **$\text{kWh/m}^2\text{/hari}$** | Rata-rata radiasi penyinaran matahari harian sepanjang satu tahun. |
+| `total_annual_energy_kwh` | `double` / `double precision` | NOT NULL | **Kilowatt-hour (kWh)** | Total akumulasi estimasi produksi energi listrik selama 1 tahun penuh (12 bulan). |
+| `peak_production_month` | `string` / `text` | NOT NULL | Nama bulan | Bulan dengan estimasi produksi energi tertinggi dalam setahun (misal: "August"). |
+| `lowest_production_month`| `string` / `text` | NOT NULL | Nama bulan | Bulan dengan estimasi produksi energi terendah dalam setahun (misal: "December"). |
 
 ---
 
 ### B. Entitas `monthly_productions` (Tabel Rincian Produksi Bulanan)
 Tabel ini menyimpan hasil rincian produksi energi untuk setiap bulan (12 baris data per satu simulasi).
 
-| Nama Atribut | Tipe Data (Model / SQLite) | Constraint | Besaran / Satuan | Keterangan & Batasan |
+| Nama Atribut | Tipe Data (Model / PostgreSQL) | Constraint | Besaran / Satuan | Keterangan & Batasan |
 | :--- | :--- | :--- | :--- | :--- |
-| `simulation_id` | `int` / `INTEGER` | **PK**, **FK** | Dimensi nominal (ID) | Mengacu ke `simulations.simulation_id` (`ON DELETE CASCADE`). |
-| `month_index` | `int` / `INTEGER` | **PK** | Indeks numerik (1 s/d 12) | Urutan bulan kalender (1 = Januari, 2 = Februari, ..., 12 = Desember). |
-| `month_name` | `string` / `TEXT` | NOT NULL | Teks singkatan / label | Label bulan (Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des). |
-| `solar_radiation_daily_average` | `double` / `REAL` | NOT NULL | **$\text{kWh/m}^2\text{/hari}$** | Rata-rata radiasi harian pada bulan berjalan dari NASA POWER (`ALLSKY_SFC_SW_DWN`). |
-| `estimated_energy_kwh` | `double` / `REAL` | NOT NULL | **Kilowatt-hour (kWh)** | Estimasi produksi energi bulanan ($P_{\text{peak}} \times G_{\text{harian}} \times \text{hari} \times \text{PR}$). |
+| `simulation_id` | `int` / `integer` | **PK**, **FK** | Dimensi nominal (ID) | Mengacu ke `simulations.simulation_id` (`ON DELETE CASCADE`). |
+| `month_index` | `int` / `integer` | **PK**, CHECK 1–12 | Indeks numerik (1 s/d 12) | Urutan bulan kalender (1 = Januari, 2 = Februari, ..., 12 = Desember). |
+| `month_name` | `string` / `text` | NOT NULL | Teks singkatan / label | Label bulan (Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des). |
+| `solar_radiation_daily_average` | `double` / `double precision` | NOT NULL | **$\text{kWh/m}^2\text{/hari}$** | Rata-rata radiasi harian pada bulan berjalan dari NASA POWER (`ALLSKY_SFC_SW_DWN`). |
+| `estimated_energy_kwh` | `double` / `double precision` | NOT NULL | **Kilowatt-hour (kWh)** | Estimasi produksi energi bulanan ($P_{\text{peak}} \times G_{\text{harian}} \times \text{hari} \times \text{PR}$). |
 
 ---

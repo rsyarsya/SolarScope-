@@ -14,7 +14,7 @@ Pembangunan backend dibagi menjadi 5 tahapan berurutan:
          ↓
 [Step 3: Calculation Engine (Formula Solar)] 
          ↓
-[Step 4: Persistence Layer (SQLite Database)] 
+[Step 4: Persistence Layer (PostgreSQL / Supabase)] 
          ↓
 [Step 5: Facade / Service Result (Titik Temu UI)]
 ```
@@ -23,8 +23,8 @@ Pembangunan backend dibagi menjadi 5 tahapan berurutan:
 | :--- | :--- | :--- | :--- |
 | **Step 1** | **Domain Models** | Objek domain (`Simulation`, `Location`, dll.) | Encapsulation & Composition |
 | **Step 2** | **NasaPowerClient** | Mengambil data radiasi matahari via HTTP | Single Responsibility & Abstraksi Eksternal |
-| **Step 3** | **SolarCalculator** | Menghitung estimasi energi bulanan & tahunan | Pure Business Logic (Deterministic) |
-| **Step 4** | **SqliteSimulationRepository** | Operasi CRUD riwayat ke database lokal SQLite | Data Persistence & Repository Pattern |
+| **Step 3** | **EnergyCalculator** | Menghitung estimasi energi bulanan & tahunan | Encapsulation, Inheritance, Polymorphism |
+| **Step 4** | **PostgresSimulationRepository** | Operasi CRUD riwayat ke PostgreSQL (Supabase) via Npgsql | Data Persistence & Repository Pattern |
 | **Step 5** | **SimulationManager** | Orkestrator alur end-to-end + Result Pattern | Facade Pattern & Graceful Error Handling |
 
 ---
@@ -49,13 +49,20 @@ SolarScope/
 │   │   │   └── ServiceResult.cs
 │   │   ├── Services/
 │   │   │   ├── NasaPowerClient.cs
-│   │   │   ├── SolarCalculator.cs
-│   │   │   └── SqliteSimulationRepository.cs
+│   │   │   ├── EnergyCalculator.cs             <-- abstract, formula + alur 12 bulan
+│   │   │   ├── ClimatologyEnergyCalculator.cs  <-- tahun tipikal (365 hari)
+│   │   │   ├── YearlyEnergyCalculator.cs       <-- tahun tertentu (ikut kabisat)
+│   │   │   └── PostgresSimulationRepository.cs
 │   │   ├── SimulationManager.cs     <-- Facade untuk UI
 │   │   └── SolarScope.Core.csproj
 │   │
-│   └── SolarScope.WinForms/         <-- Frontend Desktop (WinForms .NET 8)
+│   └── SolarScope.Desktop/          <-- Frontend Desktop (WinForms .NET 9)
 │       └── (Dikelola oleh Frontend Developer)
+├── tests/
+│   ├── SolarScope.Core.Verification/     <-- Verifikasi kalkulator energi
+│   └── SolarScope.Desktop.Verification/  <-- Verifikasi alur UI
+├── tools/
+│   └── SolarScope.ConnectionCheck/       <-- Cek koneksi database Supabase
 ├── AGENTS.md
 └── README.md
 ```
@@ -85,32 +92,47 @@ E_tahun (kWh) = Total dari 12 bulan E_bulan
 - **Autentikasi:** Tanpa API Key (bebas akses, publik, reliabel).
 - **Output:** Nilai radiasi bulanan (`JAN` s/d `DEC`) dan tahunan (`ANN`).
 
-### C. Database Lokal (SQLite)
-- **Library:** `Microsoft.Data.Sqlite` (ringan, tanpa server/daemon terpisah).
-- **File Database:** `solarscope.db` (disimpan lokal di direktori aplikasi).
-- **Tabel:** `simulations`
-- **Operasi:**
-  - `InsertSimulation(Simulation sim)`: Menyimpan riwayat simulasi baru beserta rincian 12 bulan.
-  - `GetAllSimulations()`: Mengambil seluruh daftar ringkasan riwayat untuk ditampilkan di tabel UI.
-  - `GetSimulationById(int id)`: Membuka detail hasil simulasi tertentu.
-  - `DeleteSimulation(int id)`: Menghapus satu riwayat simulasi.
+### C. Database PostgreSQL (Supabase)
+- **Server:** PostgreSQL 17 yang dikelola Supabase (Free plan), diakses melalui Supavisor pooler (`aws-0-ap-northeast-1.pooler.supabase.com:5432`, SSL `VerifyFull`).
+- **Library:** `Npgsql` (driver ADO.NET resmi PostgreSQL untuk .NET), tanpa ORM.
+- **Connection string:** dibaca dari environment variable `SOLARSCOPE_DB_CONNECTION`. Tidak pernah ditulis di kode, `appsettings`, atau repository.
+- **Tabel:** `simulations` (induk) dan `monthly_productions` (12 baris per simulasi). Detail kolom ada di `docs/diagrams/erd/README.md`.
+- **Row Level Security:** aktif pada kedua tabel. Aplikasi terhubung sebagai role database melalui connection string, bukan melalui API publik Supabase.
+- **Cek koneksi:** `dotnet run --project tools/SolarScope.ConnectionCheck` menampilkan jumlah baris kedua tabel.
+- **Catatan operasional:** project Free plan otomatis di-pause setelah sekitar 7 hari tidak aktif. Gejalanya error `XX000 ... tenant/user ... not found`. Pulihkan melalui **Restore project** di dashboard Supabase.
+- **Operasi repository (`PostgresSimulationRepository`, semua mengembalikan `ServiceResult<T>`):**
+  - `InsertSimulationAsync(Simulation sim)`: Menyimpan riwayat simulasi baru beserta rincian 12 bulan dalam satu transaksi.
+  - `GetAllSimulationsAsync()`: Mengambil daftar ringkasan riwayat (tanpa rincian bulanan) untuk ditampilkan di tabel UI.
+  - `GetSimulationByIdAsync(int id)`: Membuka detail hasil simulasi tertentu beserta 12 bulan.
+  - `DeleteSimulationAsync(int id)`: Menghapus satu riwayat simulasi (rincian bulanan ikut terhapus melalui `ON DELETE CASCADE`).
+- **Verifikasi:** `dotnet run --project tests/SolarScope.Core.Verification` menjalankan simpan, baca, dan hapus terhadap Supabase. Data uji dihapus kembali, dan bagian ini dilewati jika `SOLARSCOPE_DB_CONNECTION` belum diisi.
 
-### D. Skema Tabel Database (SQLite)
-Sesuai atribut pada `class-diagram-simple.png`:
+### D. Skema Tabel Database (PostgreSQL)
+Sesuai skema yang aktif di Supabase:
 ```sql
-CREATE TABLE IF NOT EXISTS simulations (
-    simulation_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    scenario_name TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    latitude REAL NOT NULL,
-    longitude REAL NOT NULL,
-    location_name TEXT,
-    system_capacity_kwp REAL NOT NULL,
-    performance_ratio REAL NOT NULL DEFAULT 0.75,
-    total_annual_energy_kwh REAL NOT NULL,
-    peak_production_month TEXT NOT NULL,
-    lowest_production_month TEXT NOT NULL,
-    monthly_productions_json TEXT NOT NULL
+CREATE TABLE simulations (
+    simulation_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    scenario_name text NOT NULL CHECK (btrim(scenario_name) <> ''),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    latitude double precision NOT NULL CHECK (latitude BETWEEN -90 AND 90),
+    longitude double precision NOT NULL CHECK (longitude BETWEEN -180 AND 180),
+    location_name text,
+    system_capacity_kwp double precision NOT NULL CHECK (system_capacity_kwp > 0),
+    performance_ratio double precision NOT NULL DEFAULT 0.75 CHECK (performance_ratio BETWEEN 0.01 AND 1),
+    data_source text NOT NULL DEFAULT 'NASA POWER Climatology',
+    annual_average_radiation double precision NOT NULL CHECK (annual_average_radiation >= 0),
+    total_annual_energy_kwh double precision NOT NULL CHECK (total_annual_energy_kwh >= 0),
+    peak_production_month text NOT NULL,
+    lowest_production_month text NOT NULL
+);
+
+CREATE TABLE monthly_productions (
+    simulation_id integer NOT NULL REFERENCES simulations(simulation_id) ON DELETE CASCADE,
+    month_index integer NOT NULL CHECK (month_index BETWEEN 1 AND 12),
+    month_name text NOT NULL,
+    solar_radiation_daily_average double precision NOT NULL CHECK (solar_radiation_daily_average >= 0),
+    estimated_energy_kwh double precision NOT NULL CHECK (estimated_energy_kwh >= 0),
+    PRIMARY KEY (simulation_id, month_index)
 );
 ```
 

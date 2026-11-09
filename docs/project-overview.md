@@ -46,5 +46,4 @@ Jelaskan alur dari input lokasi dan kapasitas sistem, pengambilan data radiasi, 
 - Arsitektur aplikasi
 - Formula final
 - API final
-- Pilihan final antara SQLite dan Supabase
 - Struktur database
