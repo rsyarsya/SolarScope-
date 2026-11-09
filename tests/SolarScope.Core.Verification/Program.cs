@@ -12,7 +12,7 @@ internal static class Program
         checks++;
     }
 
-    private static int Main()
+    private static async Task<int> Main()
     {
         var parameter = new SystemParameter { SystemCapacityKwp = 2, PerformanceRatio = 0.75 };
         var flatRadiation = Enumerable.Repeat(5.0, 12).ToArray();
@@ -42,7 +42,49 @@ internal static class Program
         try { _ = new YearlyEnergyCalculator(0); } catch (ArgumentOutOfRangeException) { threw = true; }
         Check(threw, "Rejects invalid year");
 
+        await VerifyDatabaseAsync(parameter, radiation);
+
         Console.WriteLine($"{checks} checks passed");
         return 0;
+    }
+
+    // Round trip ke Supabase: simpan, baca daftar, baca detail, hapus. Data uji dihapus kembali.
+    private static async Task VerifyDatabaseAsync(SystemParameter parameter, double[] radiation)
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(PostgresSimulationRepository.ConnectionEnvironmentVariable)))
+        {
+            Console.WriteLine($"SKIP database checks ({PostgresSimulationRepository.ConnectionEnvironmentVariable} belum diisi)");
+            return;
+        }
+
+        await using var repository = PostgresSimulationRepository.FromEnvironment();
+        var simulation = new Simulation
+        {
+            ScenarioName = "Verifikasi Otomatis",
+            Location = new Location { Latitude = -7.7956, Longitude = 110.3695, LocationName = "Yogyakarta" },
+            SystemParameter = parameter,
+            Summary = new ClimatologyEnergyCalculator().Calculate(parameter, radiation).Data
+        };
+
+        var insert = await repository.InsertSimulationAsync(simulation);
+        Check(insert.IsSuccess && insert.Data > 0, insert.IsSuccess ? $"Insert simulation to PostgreSQL (id {insert.Data})" : "Insert failed: " + insert.ErrorMessage);
+        int id = insert.Data;
+        try
+        {
+            var all = await repository.GetAllSimulationsAsync();
+            Check(all.IsSuccess && all.Data!.Any(s => s.SimulationId == id), "Saved simulation appears in history list");
+
+            var detail = await repository.GetSimulationByIdAsync(id);
+            Check(detail.IsSuccess && detail.Data!.Summary!.MonthlyProductions.Count == 12
+                && detail.Data.Summary.TotalAnnualEnergyKwh == simulation.Summary!.TotalAnnualEnergyKwh
+                && detail.Data.Location.LocationName == "Yogyakarta", "Detail reloads 12 months and matching totals");
+        }
+        finally
+        {
+            var delete = await repository.DeleteSimulationAsync(id);
+            Check(delete.IsSuccess, "Delete simulation (monthly rows cascade)");
+        }
+        Check(!(await repository.GetSimulationByIdAsync(id)).IsSuccess, "Deleted simulation is no longer found");
+        Check(!(await repository.InsertSimulationAsync(new Simulation { ScenarioName = "Tanpa Hasil", SystemParameter = parameter })).IsSuccess, "Rejects saving simulation without results");
     }
 }
