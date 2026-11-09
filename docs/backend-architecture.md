@@ -100,11 +100,12 @@ E_tahun (kWh) = Total dari 12 bulan E_bulan
 - **Row Level Security:** aktif pada kedua tabel. Aplikasi terhubung sebagai role database melalui connection string, bukan melalui API publik Supabase.
 - **Cek koneksi:** `dotnet run --project tools/SolarScope.ConnectionCheck` menampilkan jumlah baris kedua tabel.
 - **Catatan operasional:** project Free plan otomatis di-pause setelah sekitar 7 hari tidak aktif. Gejalanya error `XX000 ... tenant/user ... not found`. Pulihkan melalui **Restore project** di dashboard Supabase.
-- **Operasi repository (rencana Step 4):**
-  - `InsertSimulation(Simulation sim)`: Menyimpan riwayat simulasi baru beserta rincian 12 bulan dalam satu transaksi.
-  - `GetAllSimulations()`: Mengambil seluruh daftar ringkasan riwayat untuk ditampilkan di tabel UI.
-  - `GetSimulationById(int id)`: Membuka detail hasil simulasi tertentu.
-  - `DeleteSimulation(int id)`: Menghapus satu riwayat simulasi (rincian bulanan ikut terhapus melalui `ON DELETE CASCADE`).
+- **Operasi repository (`PostgresSimulationRepository`, semua mengembalikan `ServiceResult<T>`):**
+  - `InsertSimulationAsync(Simulation sim)`: Menyimpan riwayat simulasi baru beserta rincian 12 bulan dalam satu transaksi.
+  - `GetAllSimulationsAsync()`: Mengambil daftar ringkasan riwayat (tanpa rincian bulanan) untuk ditampilkan di tabel UI.
+  - `GetSimulationByIdAsync(int id)`: Membuka detail hasil simulasi tertentu beserta 12 bulan.
+  - `DeleteSimulationAsync(int id)`: Menghapus satu riwayat simulasi (rincian bulanan ikut terhapus melalui `ON DELETE CASCADE`).
+- **Verifikasi:** `dotnet run --project tests/SolarScope.Core.Verification` menjalankan simpan, baca, dan hapus terhadap Supabase. Data uji dihapus kembali, dan bagian ini dilewati jika `SOLARSCOPE_DB_CONNECTION` belum diisi.
 
 ### D. Skema Tabel Database (PostgreSQL)
 Sesuai skema yang aktif di Supabase:
