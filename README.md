@@ -24,7 +24,6 @@ Buka `SolarScope.sln` melalui Visual Studio 2022 dengan workload .NET desktop da
 - Jalankan frontend: `dotnet run --project src/SolarScope.Desktop/SolarScope.Desktop.csproj`
 - Verifikasi: `dotnet run --project tests/SolarScope.Desktop.Verification/Verification.csproj`
 - Backend domain models: `src/SolarScope.Core/` (.NET 8).
-- Worksheet dan screenshot akademik: `docs/coursework/modul7/`.
 - Latihan login: `examples/LabLogin/`.
 
 UI dan navigasi ini menjadi frontend resmi. Data energi masih berupa contoh tetap, riwayat hanya bertahan selama sesi, dan frontend belum terhubung ke backend/API/database. Pengujian Windows 125% aktual belum terverifikasi.
